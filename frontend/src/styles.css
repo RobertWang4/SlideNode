@@ -1,0 +1,89 @@
+:root {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: #1f2937;
+  background: linear-gradient(180deg, #f7f7f2 0%, #eef4f8 100%);
+}
+
+body {
+  margin: 0;
+}
+
+.layout {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+header h1 {
+  margin-bottom: 0;
+}
+
+header p {
+  margin-top: 4px;
+  color: #4b5563;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: #0f766e;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.section {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.subsection {
+  margin-bottom: 12px;
+}
+
+.note {
+  color: #374151;
+}
+
+.citations {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.btn-delete {
+  background: #dc2626;
+  padding: 4px 8px;
+  font-size: 0.8em;
+  margin-left: 8px;
+}

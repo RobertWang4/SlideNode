@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pip install:*)",
+      "Bash(/Users/robert/Projects/SlideNode/backend/.venv/bin/pip install:*)",
+      "Bash(.venv/bin/python -m pytest:*)",
+      "Bash(/Users/robert/Projects/SlideNode/backend/.venv/bin/python:*)",
+      "Bash(python3.12 -m venv:*)",
+      "Bash(.venv312/bin/pip install:*)",
+      "Bash(PYTHONPATH=. .venv312/bin/python:*)",
+      "Bash(PYTHONPATH=. LLM_PROVIDER=mock .venv312/bin/python:*)",
+      "Bash(PYTHONPATH=. .venv/bin/python3.12 -m pytest:*)",
+      "Bash(PYTHONPATH=. .venv/bin/python3.12:*)",
+      "Bash(npx skills:*)"
+    ]
+  }
+}

@@ -11,3 +11,7 @@ backend/.env
 frontend/.env
 slidenode.db
 CLAUDE.md
+test.py
+backend/data/
+.playwright-mcp/
+.claude/

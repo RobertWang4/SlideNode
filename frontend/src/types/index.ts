@@ -8,6 +8,8 @@ export type Bullet = {
   id: string;
   text: string;
   citations: Citation[];
+  image_url: string | null;
+  latex: string | null;
 };
 
 export type Subsection = {

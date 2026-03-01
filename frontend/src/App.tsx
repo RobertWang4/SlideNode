@@ -1,131 +1,131 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
-import { deleteDocument, exportMarkdown, exportPptx, getDeck, getJob, listDocuments, patchDeck, uploadDocument } from "./api/client";
-import { DeckEditor } from "./components/DeckEditor";
-import { JobStatusPanel } from "./components/JobStatusPanel";
-import { UploadPanel } from "./components/UploadPanel";
-import type { Deck, DocumentListItem, Job } from "./types";
+import { useAppState } from "@/hooks/useAppState";
+import { useJobPoller } from "@/hooks/useJobPoller";
+import { useDeckDraft } from "@/hooks/useDeckDraft";
+import { useCitationSync } from "@/hooks/useCitationSync";
+
+import { AppShell } from "@/components/layout/AppShell";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { MainContent } from "@/components/main/MainContent";
+import { UploadDialog } from "@/components/upload/UploadDialog";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function App() {
-  const [job, setJob] = useState<Job | null>(null);
-  const [documents, setDocuments] = useState<DocumentListItem[]>([]);
-  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
-  const [deck, setDeck] = useState<Deck | null>(null);
-  const [error, setError] = useState("");
+  const {
+    job,
+    setJob,
+    documents,
+    activeDocumentId,
+    deck,
+    setDeck,
+    error,
+    setError,
+    uploadDialogOpen,
+    setUploadDialogOpen,
+    handleUpload,
+    openDocument,
+    saveDeck,
+    downloadMarkdown,
+    downloadPptx,
+    handleDelete,
+    refreshDocuments,
+  } = useAppState();
 
-  useEffect(() => {
-    void refreshDocuments();
-  }, []);
+  // Job polling
+  useJobPoller({
+    job,
+    activeDocumentId,
+    onJobUpdate: setJob,
+    onDeckReady: setDeck,
+    onDocumentsRefresh: () => void refreshDocuments(),
+    onError: setError,
+  });
 
-  useEffect(() => {
-    if (!job || job.status === "done" || job.status === "failed") return;
-    const timer = setInterval(async () => {
-      try {
-        const latest = await getJob(job.id);
-        setJob(latest);
-        if (latest.status === "done" && activeDocumentId) {
-          setDeck(await getDeck(activeDocumentId));
-          await refreshDocuments();
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Polling error");
-      }
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [job, activeDocumentId]);
+  // Deck draft for editing
+  const {
+    draftSections,
+    isDirty,
+    updateSectionHeading,
+    updateSubsectionHeading,
+    updateSubsectionAnnotation,
+    updateBulletText,
+    getDraftPayload,
+  } = useDeckDraft(deck);
 
-  async function refreshDocuments() {
-    const items = await listDocuments();
-    setDocuments(items);
-  }
+  // Citation sync
+  const {
+    activeBulletId,
+    activeCitations,
+    handleBulletFocus,
+  } = useCitationSync(deck);
 
-  async function handleUpload(file: File) {
-    setError("");
-    const created = await uploadDocument(file);
-    setActiveDocumentId(created.document_id);
-    const latest = await getJob(created.job_id);
-    setJob(latest);
-    if (latest.status === "done") {
-      setDeck(await getDeck(created.document_id));
-      await refreshDocuments();
+  // Delete confirmation dialog
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  const handleSave = useCallback(async () => {
+    await saveDeck(getDraftPayload());
+  }, [saveDeck, getDraftPayload]);
+
+  const confirmDelete = useCallback(() => {
+    if (deleteTarget) {
+      void handleDelete(deleteTarget);
+      setDeleteTarget(null);
     }
-  }
-
-  async function openDocument(id: string) {
-    setActiveDocumentId(id);
-    setDeck(await getDeck(id));
-  }
-
-  async function saveDeck(payload: unknown) {
-    if (!activeDocumentId) return;
-    const updated = await patchDeck(activeDocumentId, payload);
-    setDeck(updated);
-  }
-
-  async function downloadMarkdown() {
-    if (!activeDocumentId) return;
-    const content = await exportMarkdown(activeDocumentId);
-    const blob = new Blob([content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "slidenode-export.md";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function downloadPptx() {
-    if (!activeDocumentId) return;
-    const blob = await exportPptx(activeDocumentId);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "slidenode-export.pptx";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this document and all its data?")) return;
-    try {
-      await deleteDocument(id);
-      if (activeDocumentId === id) {
-        setActiveDocumentId(null);
-        setDeck(null);
-        setJob(null);
-      }
-      await refreshDocuments();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed");
-    }
-  }
+  }, [deleteTarget, handleDelete]);
 
   return (
-    <main className="layout">
-      <header>
-        <h1>SlideNode</h1>
-        <p>PDF → structured learning slides</p>
-      </header>
+    <>
+      <AppShell
+        sidebar={
+          <Sidebar
+            documents={documents}
+            activeDocumentId={activeDocumentId}
+            job={job}
+            onOpenDocument={openDocument}
+            onDeleteDocument={setDeleteTarget}
+            onUploadClick={() => setUploadDialogOpen(true)}
+          />
+        }
+      >
+        <MainContent
+          activeDocumentId={activeDocumentId}
+          job={job}
+          deck={deck}
+          error={error}
+          onDismissError={() => setError("")}
+          draftSections={draftSections}
+          isDirty={isDirty}
+          onUpdateSectionHeading={updateSectionHeading}
+          onUpdateSubsectionHeading={updateSubsectionHeading}
+          onUpdateSubsectionAnnotation={updateSubsectionAnnotation}
+          onUpdateBulletText={updateBulletText}
+          onSave={handleSave}
+          onExportMarkdown={downloadMarkdown}
+          onExportPptx={downloadPptx}
+          activeBulletId={activeBulletId}
+          activeCitations={activeCitations}
+          onBulletFocus={handleBulletFocus}
+        />
+      </AppShell>
 
-      <UploadPanel onUpload={handleUpload} />
-      <JobStatusPanel job={job} />
+      <UploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onUpload={handleUpload}
+      />
 
-      <section className="panel">
-        <h2>My Documents</h2>
-        <ul>
-          {documents.map((d) => (
-            <li key={d.id}>
-              <button onClick={() => openDocument(d.id)}>{d.title}</button>
-              <small> {d.status} {d.pages ? `(${d.pages} pages)` : ""}</small>
-              <button className="btn-delete" onClick={() => handleDelete(d.id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <DeckEditor deck={deck} onSave={saveDeck} onExport={downloadMarkdown} onExportPptx={downloadPptx} />
-
-      {error ? <p className="error">{error}</p> : null}
-    </main>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete Document"
+        description="This will permanently delete this document and all its data. This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        destructive
+      />
+    </>
   );
 }

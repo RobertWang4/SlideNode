@@ -15,3 +15,8 @@ test.py
 backend/data/
 .playwright-mcp/
 .claude/
+docs/plans/
+.DS_Store
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+*.png
